@@ -28,7 +28,9 @@ function makeAHand(cardpool) {
 }
 function main() {
   let cardpool = makeCardPool();
-  for (let i = 0; i < 10000; i++) {
+  let test = 100;
+  console.log(" Test :", test);
+  for (let i = 0; i < test; i++) {
     let cp = cardpool.slice();
     let hand = makeAHand(cp);
     checkHand(hand);
@@ -117,7 +119,6 @@ function checkAces(hand) {
       let braodway = false;
       for (let card of hand) {
         if (card.point >= 10) {
-          debugger;
           broadwaycard++;
         }
         if (broadwaycard > 1) braodway = true;
@@ -128,28 +129,180 @@ function checkAces(hand) {
   }
 }
 
+// 3. Suited Ace Hands
+// Suited ace with a rundown, a pair, or two Broadway cards
+function checksutiedAce(hand) {
+  let suit = false;
+  let suitedAce = false;
+  for (let card of hand) {
+    if (card.Point == "A") {
+      suit = card.Suit;
+      suitedAce = true;
+      break;
+    }
+  }
+  if (suitedAce) {
+    suitedAce = false;
+    for (let card of hand) {
+      if (card.Suit == suit && card.Point != "A") {
+        suitedAce = true;
+        break;
+      }
+    }
+
+    if (suitedAce) {
+      // pair
+      let pair = false;
+      for (let card of hand) {
+        for (let walkcard of hand) {
+          if (
+            card.Point != "A" &&
+            card.Point == walkcard.Point &&
+            card.Suit != walkcard.Suit
+          ) {
+            pair = true;
+            break;
+          }
+        }
+      }
+      if (pair) showHand(hand, "Suited Ace with pair");
+      // two Broadway
+      let broadwaycard = 0;
+      let braodway = false;
+      for (let card of hand) {
+        if (card.point >= 10) {
+          broadwaycard++;
+        }
+        if (broadwaycard > 1) braodway = true;
+      }
+
+      if (braodway) showHand(hand, "Suited Ace with broadway");
+
+      // rundown
+      let rundown = false;
+      let downtown = [];
+      for (let card of hand) {
+        if (card.Point != "A") {
+          downtown.push(card.point);
+        }
+      }
+      if (downtown.length == 3) {
+        downtown.sort((a, b) => {
+          return a - b;
+        });
+        if (
+          downtown[2] - downtown[0] < 4 &&
+          downtown[1] != downtown[0] &&
+          downtown[2] != downtown[1]
+        ) {
+          rundown = true;
+        }
+      }
+      if (rundown) showHand(hand, "Suited Ace with rundown");
+    }
+  }
+}
+// 1. Big card and A high broadway wrap
+// 4 cards T and higher, or 4 cards 9 and higher with an ace.
+// KQJT AQJ9
+function checkBigCard(hand) {
+  let bigCard = true;
+  let needAce = false;
+  for (let card of hand) {
+    if (card.Point < 9) {
+      // besides all letters ATJQK
+      bigCard = false;
+      break;
+    }
+    if (card.Point == 9) {
+      needAce = true;
+      bigCard = false;
+    }
+    if (needAce) {
+      for (let card of hand) {
+        if (card.Point == "A") bigCard = true;
+      }
+    }
+  }
+  if (bigCard) showHand(hand, "Big card");
+}
+
+function checkStraight(hand) {
+  let pointArray = [];
+  for (let card of hand) {
+    pointArray.push(card.point);
+  }
+  pointArray.sort((a, b) => {
+    return a - b;
+  });
+  if (pointArray[3] - pointArray[0] > 5) return;
+  else {
+    let checkDuplicate = new Set(pointArray);
+    if (checkDuplicate.size < pointArray.length) return;
+  }
+  showHand(hand, "Straight card");
+}
+// 4. Pair-plus Hands
+// Pairs with suited and connected side cards, or a pair with another pair.
+// JJT9 KK88
+function checkPairPlus(hand) {
+  let pointArray = [];
+  for (let card of hand) {
+    pointArray.push(card.point);
+  }
+  pointArray.sort((a, b) => {
+    return a - b;
+  });
+  let checkPair = new Set(pointArray);
+  if (checkPair.size > 3) return;
+  if (pointArray[1] != pointArray[2] && checkPair.size == 2) {
+    // showHand(hand, "Pair with pair card");
+    return;
+  }
+
+  if (
+    (pointArray[2] - pointArray[1] == 1 &&
+      pointArray[1] - pointArray[0] == 1) ||
+    (pointArray[3] - pointArray[2] == 1 && pointArray[2] - pointArray[1] == 1)
+  ) {
+    if (checkSuit(hand) > 0)
+      showHand(hand, "Pairs with suited and connected side cards");
+  }
+}
 function checkHand(hand) {
   // console.log(suits);
   // 1. Big card and A high broadway wrap
   // 4 cards T and higher, or 4 cards 9 and higher with an ace.
   // KQJT AQJ9
   //
+  // checkBigCard(hand);
+  //
   // 2. Straight hand
   // 4 connected cards with at most two gaps in them
   // 5678 678T QJ78 9874
+  //
+  // checkStraight(hand);
   //
   // 3. Suited Ace Hands
   // Suited ace with a rundown, a pair, or two Broadway cards
   // A986 ATT3 AKQ2
   //
+  // checksutiedAce(hand);
+  //
   // 4. Pair-plus Hands
   // Pairs with suited and connected side cards, or a pair with another pair.
   // JJT9 KK88
   //
+  // checkPairPlus(hand);
+  //
   // 5. Aces
   // AAxx. These hands vary in strength from speculative ("dry" AAxx with worthless side cards)
   // to ultra premium (doubly suited AAxx with good side cards).
+  // AAxx. These hands vary in strength from speculative ("dry" AAxx with worthless side cards)
+  // to ultra premium (doubly suited AAxx with good side cards).
+  //
   //   checkAces(hand);
+  //
   // 6. Marginal Hands
   // A wide category made up of various weak "one-way" hands with only one significant strength component:
   // - 3 Broadway cards + a dangler

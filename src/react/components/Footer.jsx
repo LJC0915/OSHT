@@ -10,7 +10,7 @@ export default class Footer extends React.Component {
     return (
       <div className="Footer text-center">
         <h3>
-          D E S I G N <br /> by <br /> L.J.C
+          D E S I I G N <br /> by <br /> L.J.C
         </h3>
       </div>
     );
