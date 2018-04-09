@@ -28,7 +28,7 @@ function makeAHand(cardpool) {
 }
 function main() {
   let cardpool = makeCardPool();
-  let test = 100;
+  let test = 10000;
   console.log(" Test :", test);
   for (let i = 0; i < test; i++) {
     let cp = cardpool.slice();
@@ -67,6 +67,13 @@ function checkSuit(hand) {
 // AAxx. These hands vary in strength from speculative ("dry" AAxx with worthless side cards)
 // to ultra premium (doubly suited AAxx with good side cards).
 function checkAces(hand) {
+  // console.log("==========================================");
+  // hand = [
+  //   { Point: "A", Suit: "s", point: 1, suit: 1 },
+  //   { Point: "A", Suit: "d", point: 1, suit: 1000 },
+  //   { Point: "K", Suit: "d", point: 13, suit: 1000 },
+  //   { Point: "K", Suit: "s", point: 13, suit: 1 }
+  // ];
   let suits = checkSuit(hand);
   let numOfAce = 0;
 
@@ -76,7 +83,6 @@ function checkAces(hand) {
     }
   }
   if (numOfAce == 2) {
-    // console.log("AAXX");
     // Magnum
     // Double-suited to both aces, and with a high pair, a connector, or 2 Broadway cards. For example:
     // AAJJ AA76 AAKQ
@@ -95,7 +101,9 @@ function checkAces(hand) {
           }
         }
       }
-      if (hightpair) showHand(hand, "Magnum  Aces with high pair");
+      if (hightpair) {
+        return true; // showHand(hand, "Magnum  Aces with high pair");
+      }
       // connector
       let connectcard = 0;
       let connector = false;
@@ -113,7 +121,9 @@ function checkAces(hand) {
           }
         }
       }
-      if (connector) showHand(hand, "Magnum  Aces with connector");
+      if (connector) {
+        return true; // showHand(hand, "Magnum  Aces with connector");
+      }
       //   two broadway
       let broadwaycard = 0;
       let braodway = false;
@@ -124,7 +134,7 @@ function checkAces(hand) {
         if (broadwaycard > 1) braodway = true;
       }
 
-      if (braodway) showHand(hand, "Magnum  Aces with broadway");
+      if (braodway) return true; // showHand(hand, "Magnum  Aces with broadway");
     }
   }
 }
@@ -165,7 +175,7 @@ function checksutiedAce(hand) {
           }
         }
       }
-      if (pair) showHand(hand, "Suited Ace with pair");
+      if (pair) return true; //showHand(hand, "Suited Ace with pair");
       // two Broadway
       let broadwaycard = 0;
       let braodway = false;
@@ -176,7 +186,7 @@ function checksutiedAce(hand) {
         if (broadwaycard > 1) braodway = true;
       }
 
-      if (braodway) showHand(hand, "Suited Ace with broadway");
+      if (braodway) return true; // showHand(hand, "Suited Ace with broadway");
 
       // rundown
       let rundown = false;
@@ -198,7 +208,7 @@ function checksutiedAce(hand) {
           rundown = true;
         }
       }
-      if (rundown) showHand(hand, "Suited Ace with rundown");
+      if (rundown) return true; // showHand(hand, "Suited Ace with rundown");
     }
   }
 }
@@ -224,7 +234,7 @@ function checkBigCard(hand) {
       }
     }
   }
-  if (bigCard) showHand(hand, "Big card");
+  if (bigCard) return true;
 }
 
 function checkStraight(hand) {
@@ -235,12 +245,13 @@ function checkStraight(hand) {
   pointArray.sort((a, b) => {
     return a - b;
   });
-  if (pointArray[3] - pointArray[0] > 5) return;
+  if (pointArray[3] - pointArray[0] > 5) return false;
   else {
     let checkDuplicate = new Set(pointArray);
-    if (checkDuplicate.size < pointArray.length) return;
+    if (checkDuplicate.size < pointArray.length) return false;
   }
-  showHand(hand, "Straight card");
+  let suits = checkSuit(hand);
+  if (suits != 0) return true;
 }
 // 4. Pair-plus Hands
 // Pairs with suited and connected side cards, or a pair with another pair.
@@ -257,7 +268,7 @@ function checkPairPlus(hand) {
   if (checkPair.size > 3) return;
   if (pointArray[1] != pointArray[2] && checkPair.size == 2) {
     // showHand(hand, "Pair with pair card");
-    return;
+    return true;
   }
 
   if (
@@ -265,8 +276,83 @@ function checkPairPlus(hand) {
       pointArray[1] - pointArray[0] == 1) ||
     (pointArray[3] - pointArray[2] == 1 && pointArray[2] - pointArray[1] == 1)
   ) {
-    if (checkSuit(hand) > 0)
-      showHand(hand, "Pairs with suited and connected side cards");
+    if (checkSuit(hand) > 0) return true;
+    // showHand(hand, "Pairs with suited and connected side cards");
+  }
+}
+
+// 6. Marginal Hands
+// A wide category made up of various weak "one-way" hands with only one significant strength component:
+// - 3 Broadway cards + a dangler
+// - High pairs with worthless side cards
+// - Weak suited aces that don't fall under the previous "Suited Ace Hands" category
+// - Offsuit rundowns
+// KQJ4 KK72 AJ76 JT97
+function checkMarginal(hand) {
+  let suits = checkSuit(hand);
+  // - 3 Broadway cards + a dangler
+  let countBraodway = 3;
+  for (let card of hand) {
+    if (!(card.Point < 9)) {
+      countBraodway--;
+    }
+  }
+  if (countBraodway == 0) {
+    // showHand(hand, "Marginal Hands 3 Broadway cards + a dangler");
+  }
+  // - High pairs with worthless side cards
+  let hightcard = 0;
+  let hightpair = false;
+  for (let card of hand) {
+    if (card.point >= 10) {
+      if (!hightcard) {
+        hightcard = card.point;
+      } else {
+        if (hightcard == card.point) {
+          hightpair = true;
+        }
+      }
+    }
+  }
+  if (hightpair) {
+    // showHand(hand, "Marginal Hands with High pairs with worthless side cards");
+  }
+  // Weak suited aces that don't fall under the previous "Suited Ace Hands" category
+  let suitedAce = false;
+  for (let card of hand) {
+    if (card.Point == "A") {
+      suit = card.Suit;
+      suitedAce = true;
+      break;
+    }
+  }
+  if (suitedAce) {
+    suitedAce = false;
+    for (let card of hand) {
+      if (card.Suit == suit && card.Point != "A") {
+        suitedAce = true;
+        break;
+      }
+    }
+    if (suitedAce) {
+      // showHand(hand, "Marginal Hands with Weak suited aces");
+    }
+  }
+  // Offsuit rundowns
+  let pointArray = [];
+  for (let card of hand) {
+    pointArray.push(card.point);
+  }
+  pointArray.sort((a, b) => {
+    return a - b;
+  });
+  if (pointArray[3] - pointArray[0] > 5) return;
+  else {
+    let checkDuplicate = new Set(pointArray);
+    if (checkDuplicate.size < pointArray.length) return;
+  }
+  if (suits == 0) {
+    showHand(hand, "Marginal Hands Offsuit rundowns");
   }
 }
 function checkHand(hand) {
@@ -311,5 +397,27 @@ function checkHand(hand) {
   // - Offsuit rundowns
   // KQJ4 KK72 AJ76 JT97
   //
+  // checkMarginal(hand);
+  // hand = [
+  //   { Point: "A", Suit: "s", point: 1, suit: 1 },
+  //   { Point: "A", Suit: "d", point: 1, suit: 1000 },
+  //   { Point: "K", Suit: "d", point: 13, suit: 1000 },
+  //   { Point: "K", Suit: "s", point: 13, suit: 1 }
+  // ];
+  // showHand(hand, "MDebug");
+  if (checkAces(hand)) {
+    showHand(hand, "Magnum  Aces");
+  } else if (checkBigCard(hand)) {
+    // showHand(hand, "Big card");
+  } else if (checkStraight(hand)) {
+    // showHand(hand, "Straight card");
+  } else if (checksutiedAce(hand)) {
+    // showHand(hand, "Suited Ace");
+  } else if (checkPairPlus(hand)) {
+    // showHand(
+    //   hand,
+    //   "Pairs with suited and connected side cards, or a pair with another pair."
+    // );
+  }
 }
 main();
