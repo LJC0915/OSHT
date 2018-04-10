@@ -1,48 +1,13 @@
-function makeCardPool() {
-  // i : 1~13 =  A ~ K
-  // j : 1~4  = spade, heart, club, diamond
-  let point = ["A", 2, 3, 4, 5, 6, 7, 8, 9, "T", "J", "Q", "K"];
-  let suit = ["s", "h", "c", "d"];
-  let cardpool = [];
-  for (var i = 0; i < 13; i++) {
-    for (let j = 0; j < 4; j++) {
-      cardpool.push({
-        Point: point[i],
-        Suit: suit[j],
-        point: i + 1,
-        suit: Math.pow(10, j)
-      });
-    }
-  }
-  return cardpool;
-}
-function makeAHand(cardpool) {
-  let hand = [];
-  for (let i = 0; i < 4; i++) {
-    let card = Math.floor(Math.random() * (51 - i) + 1);
+//
+// Type
+//   Premium / Speculative / Marginal / Trash
+//
+// Category
+//   Structure of hand
+//
 
-    card = cardpool.splice(card, 1);
-    hand.push(card[0]);
-  }
-  return hand;
-}
-function main() {
-  let cardpool = makeCardPool();
-  let test = 1;
-  console.log(" Test :", test);
-  for (let i = 0; i < test; i++) {
-    let cp = cardpool.slice();
-    let hand = makeAHand(cp);
-    checkHand(hand);
-  }
-}
-
-function showHand(hand, type) {
-  console.log("========  " + "ShowCard" + "  ========");
-  console.log("======  " + type + "  ======");
-  hand.forEach(card => {
-    console.log(card.Point + card.Suit);
-  });
+function HandType(handType, handCategory) {
+  return { handType, handCategory };
 }
 
 function checkSuit(hand) {
@@ -98,7 +63,6 @@ function checkBroadway(hand) {
 
   return broadways;
 }
-
 // Premiun / Speculative / Marginal / Connector / Suited A + rundown / Connector Side
 // P       / S           / M        / C         / A                  / CS
 function checkConnector(hand) {
@@ -158,71 +122,61 @@ function checkConnector(hand) {
 }
 
 function checkHand(hand) {
-  // hand = [
-  //   { Point: "A", Suit: "c", point: 1, suit: 1000 },
-  //   { Point: 3, Suit: "c", point: 3, suit: 1000 },
-  //   { Point: 7, Suit: "s", point: 7, suit: 1 },
-  //   { Point: 9, Suit: "c", point: 9, suit: 1000 }
-  // ];
-  showHand(hand, "");
-  console.log(" ====================================================== ");
   let suits = checkSuit(hand); // { suits: 1, suitedAce: false }
   let pairs = checkPair(hand); // [], [1], [1,2]
   let AcePair = pairs.filter(pair => pair == 1).length > 0 ? true : false;
   let broadways = checkBroadway(hand);
   let connector = checkConnector(hand);
-  // console.log(broadways);
-  // return;
+
   // Premium
   // Magnum & Premium AAXX
   if (AcePair && suits.suits == 2) {
     let highpair = pairs.filter(pair => pair > 10).length > 0 ? true : false;
-    if (highpair) showHand(hand, "Premium: -Magnum- AAXX/ds + high pair");
-    else if (broadways == 4)
-      showHand(hand, "Premium: -Magnum- AAXX/ds + broadway");
+    if (highpair) HandType("Premium", "Magnum AAXX/ds + high pair");
+    else if (broadways == 4) HandType("Premium", "Magnum AAXX/ds + broadways");
     else if (connector.category == "C")
-      showHand(hand, "Premium: -Magnum- AAXX/ds + connect");
-    else showHand(hand, "Premium: -Premium- AAXX/ds ");
+      HandType("Premium", "Magnum AAXX/ds + connectors");
+    else HandType("Premium", "Premium AAXX/ds ");
     return;
   }
   if (AcePair && suits.suits == 1) {
     if (pairs.length == 2) {
-      showHand(hand, "Premium: -Premium- AAXX/ss + pair");
+      HandType("Premium", "Premium AAXX/ss + pair");
     } else if (broadways == 4)
-      showHand(hand, "Premium: -Premium- AAXX/ss + broadway");
+      HandType("Premium", "Premium AAXX/ss + broadways");
     else if (connector.category == "C")
-      showHand(hand, "Premium: -Premium- AAXX/ss + connect");
-    else showHand(hand, "Speculative: -Speculative- AAXX/ss");
+      HandType("Premium", "Premium AAXX/ss + connectors");
+    else HandType("Speculative", "Speculative AAXX/ss");
     return;
   }
   // High double pairs
   if (pairs.length == 2) {
     if (pairs.filter(pair => pair > 10 || pair == 1).length == 2)
-      showHand(hand, "Premium: High double pairs");
+      HandType("Premium", "High double pairs");
     return;
   }
   // Big Cards at least single-suited
   if (broadways == 4 && suits.suits) {
-    showHand(hand, "Premium: Big Cards , at least single-suited");
+    HandType("Premium", "Big Cards , at least single-suited");
     return;
   }
   // Premium rundowns, at least single-suited
   if (connector.category == "P" && suits.suits) {
-    showHand(hand, "P: Premium rundowns, at least single-suited");
+    HandType("Premium", "Premium rundown, at least single-suited");
     return;
   }
   // Hihg pairs with suited and connected side cards
   if (pairs.length == 1 && suits.suits && connector.category == "CS") {
     if (pairs[0] > 10 || pairs[0] == 1) {
       return;
-      showHand(hand, "Premium: High double pairs");
+      HandType("Premium", "Hihg pair with suited and connected side cards");
       return;
     }
     if (pairs[0] > 6) {
       return;
-      showHand(
-        hand,
-        "Speculative: Medium pairs with suited and connected side cards"
+      HandType(
+        "Speculative",
+        "Medium pair with suited and connected side cards"
       );
       return;
     }
@@ -232,53 +186,49 @@ function checkHand(hand) {
   // Speculative rundowns, at least single-suited
 
   if (connector.category == "S" && suits.suits) {
-    showHand(
-      hand,
-      "Speculative: -Speculative- rundowns, at least single-suited"
-    );
+    HandType("Speculative", "Speculative rundown, at least single-suited");
     return;
   }
   // Suited ace with a rundown
   // Suited ace with a pair
   // Suited ace with 2 Broadway cards
   if (connector.category == "A" && suits.suitedAce) {
-    showHand(hand, "Speculative: Suited ace with a rundown");
+    HandType("Speculative", "Suited ace with a rundown");
     return;
   }
   if (suits.suitedAce && pairs.length) {
-    showHand(hand, "Speculative: Suited Ace with pair");
+    HandType("Speculative", "Suited Ace with pair");
     return;
   }
 
   if (suits.suitedAce && broadways == 3) {
-    showHand(hand, "Speculative: Suited Ace with broadway");
+    HandType("Speculative", "Suited Ace with broadways");
     return;
   }
 
   // Marginal
   // - 3 Broadway cards + a dangler, at least single-suited
   if (broadways == 3 && suits.suits) {
-    showHand(
-      hand,
-      "Marginal: 3 Broadway cards + a dangler, at least single-suited"
+    HandType(
+      "Marginal",
+      "3 Broadway cards + a dangler, at least single-suited"
     );
     return;
   }
   // - High pairs with worthless side cards
   if (pairs.length == 1 && pairs[0] > 10) {
-    showHand(hand, "Marginal: High pairs with worthless side cards");
+    HandType("Marginal", "High pairs with worthless side cards");
     return;
   }
   // - Weak suited aces that don't fall under the previous "Suited Ace Hands" category
   if (suits.suitedAce) {
-    showHand(hand, "Marginal: Weak suited aces");
+    HandType("Marginal", "Weak suited ace");
     return;
   }
   // - Offsuit rundowns
   if (connector.category == "P" || connector.category == "S") {
-    showHand(hand, "Marginal: Offsuit rundowns");
+    HandType("Marginal", "Offsuit rundowns");
     return;
   }
-  showHand(hand, "Trash");
+  HandType("Trash", "Trash");
 }
-main();

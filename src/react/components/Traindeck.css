@@ -1,0 +1,23 @@
+.traindeck {
+  padding: 10vh 0;
+}
+.buttonGroup {
+  margin: 0 auto;
+  width: 80%;
+}
+.BunttonColor {
+  background: #e8751a;
+  padding: 0 auto !important;
+}
+
+.startTrainHand {
+  margin: 0 auto;
+  width: 80px;
+  height: 80px;
+  border-radius: 99em;
+  background-color: #2980b9;
+}
+
+.newHandButton {
+  margin: auto auto;
+}
